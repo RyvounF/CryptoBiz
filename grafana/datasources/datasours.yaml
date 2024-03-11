@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: "influxdb"
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: Binance
+      defaultBucket: crypto
+      tslSkipVerify: False
+    secureJsonData:
+      token: mJedwlV38eRtm4zsD65itGtpTUjhjCnp_c9QIdWgS9vM4jab_EiHrLs3Bu7-pv9p2zGpDBJmWHGW7hpReYaA4g==

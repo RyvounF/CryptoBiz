@@ -1,0 +1,187 @@
+version: "3"
+services:
+  kafka0:
+    image: 'bitnami/kafka:latest'
+    volumes:
+      - ./kafkaBroker/keys:/bitnami/kafka/config/certs
+    ports:
+      - "29092:29092"
+    networks:
+      - nw-crypto
+    restart: unless-stopped
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka0:9092,EXTERNAL://localhost:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka0:9093,1@kafka1:9093,2@kafka2:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_KRAFT_CLUSTER_ID=m1Ze6AjGRwqarkcxJscgyQ
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  kafka1:
+    image: 'bitnami/kafka:latest'
+    volumes:
+      - ./kafkaBroker/keys:/bitnami/kafka/config/certs
+    ports:
+      - "29093:29093"
+    networks:
+      - nw-crypto
+    restart: unless-stopped
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka1:9092,EXTERNAL://localhost:29093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka0:9093,1@kafka1:9093,2@kafka2:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_KRAFT_CLUSTER_ID=m1Ze6AjGRwqarkcxJscgyQ
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  kafka2:
+    image: 'bitnami/kafka:latest'
+    volumes:
+      - ./kafkaBroker/keys:/bitnami/kafka/config/certs
+    ports:
+      - "29094:29094"
+    networks:
+      - nw-crypto
+    restart: unless-stopped
+    environment:
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka2:9092,EXTERNAL://localhost:29094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka0:9093,1@kafka1:9093,2@kafka2:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_KRAFT_CLUSTER_ID=m1Ze6AjGRwqarkcxJscgyQ
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  kafka-ui:
+    image: provectuslabs/kafka-ui:master
+    container_name: kafka-ui
+    volumes:
+      - ./kafkaBroker/kui/:/etc/kafkaui/
+    environment:
+      DYNAMIC_CONFIG_ENABLED: true
+      KAFKA_CLUSTERS_0_NAME: crypto_data
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka0:9092
+    ports:
+      - "8081:8080"
+    depends_on:
+      - kafka0
+      - kafka1
+      - kafka2
+    restart: unless-stopped
+    networks:
+      - nw-crypto
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    volumes:
+      - ./influxdb:/var/lib/influxdb2
+    depends_on:
+      - kafka0
+      - kafka1
+      - kafka2
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_HOST: influxdb
+      DOCKER_INFLUXDB_INIT_ORG: Binance
+      DOCKER_INFLUXDB_INIT_BUCKET: crypto
+      DOCKER_INFLUXDB_INIT_USERNAME: influxAdmin
+      DOCKER_INFLUXDB_INIT_PASSWORD: influxAdmin
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: mJedwlV38eRtm4zsD65itGtpTUjhjCnp_c9QIdWgS9vM4jab_EiHrLs3Bu7-pv9p2zGpDBJmWHGW7hpReYaA4g==
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+    networks:
+      - nw-crypto
+
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: grafana
+    volumes:
+      - ./grafana:/var/lib/grafana/dashboards
+      - ./grafana:/etc/grafana/provisioning
+    networks:
+      - nw-crypto
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: grafanaAdmin
+      GF_SECURITY_ADMIN_PASSWORD: grafanaAdmin
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: chrome
+    networks:
+      - nw-crypto
+    shm_size: 2gb
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    restart: unless-stopped
+    ports:
+      - "6900:5900"
+
+  scraping:
+    build:
+      context: .
+      dockerfile: scraping/Dockerfile
+    depends_on:
+      - kafka0
+      - kafka1
+      - kafka2
+      - influxdb
+      - selenium
+    networks:
+      - nw-crypto
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka0
+      - kafka1
+      - kafka2
+      - influxdb
+      - selenium
+      - scraping
+    environment:
+      - INFLUXDB_TOKEN=mJedwlV38eRtm4zsD65itGtpTUjhjCnp_c9QIdWgS9vM4jab_EiHrLs3Bu7-pv9p2zGpDBJmWHGW7hpReYaA4g==
+    networks:
+      - nw-crypto
+  crypto_api:
+    build:
+      context: .
+      dockerfile: crypto_api/Dockerfile
+    depends_on:
+      - kafka0
+      - kafka1
+      - kafka2
+      - influxdb
+    networks:
+      - nw-crypto
+  consumer_api:
+    build:
+      context: .
+      dockerfile: consumer_api/Dockerfile
+    depends_on:
+      - kafka0
+      - kafka1
+      - kafka2
+      - influxdb
+      - crypto_api
+    environment:
+      - INFLUXDB_TOKEN=mJedwlV38eRtm4zsD65itGtpTUjhjCnp_c9QIdWgS9vM4jab_EiHrLs3Bu7-pv9p2zGpDBJmWHGW7hpReYaA4g==
+    networks:
+      - nw-crypto
+
+
+networks:
+  nw-crypto:
