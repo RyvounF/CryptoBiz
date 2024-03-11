@@ -42,10 +42,6 @@ while True:
                 change = block.find('td', {'class': 'css-vtw5vj'}).text.strip()
                 cap = block.find_all('td', {'class': 'css-15lyn3l'})[1].text.strip()
 
-                # if change is None:
-                #     print("def")
-                #     change = block.find('div', {'class': 'body2 css-191zdd8'}).text.strip()
-
                 def parse_data(volume, cap, price, change):
                     volume = volume.replace(',', '.').replace('$', '')
                     cap = cap.replace('$', '')
