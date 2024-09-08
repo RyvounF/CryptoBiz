@@ -1,5 +1,5 @@
-# CryptoBiz
-#### Le projet "CryptoBiz" est un système de collecte, de traitement et de visualisation d'informations sur les cryptomonnaies provenant de différentes sources. L'objectif du projet est de fournir à l'utilisateur un outil pratique pour surveiller et analyser la dynamique des marchés de cryptomonnaies en utilisant des technologies Big Data modernes.
+# CryptoViz
+#### Le projet "CryptoViz" est un système de collecte, de traitement et de visualisation d'informations sur les cryptomonnaies provenant de différentes sources. L'objectif du projet est de fournir à l'utilisateur un outil pratique pour surveiller et analyser la dynamique des marchés de cryptomonnaies en utilisant des technologies Big Data modernes.
 
 # Lancement du projet
 
